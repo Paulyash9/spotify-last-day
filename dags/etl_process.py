@@ -2,6 +2,7 @@ import datetime
 import pandas as pd
 import sqlalchemy
 import spotipy
+import sys
 from spotipy.oauth2 import SpotifyOAuth
 from settings import spotipy_client_id, spotipy_client_secret
 from db import engine
@@ -31,10 +32,12 @@ def extraction():
     # Extract stage
 
     # Authentication into Spotify via OAuth
+    cache_path = 'cache' if sys.platform in ("linux", "linux2") else None
     spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=spotipy_client_id,
                                                         client_secret=spotipy_client_secret,
                                                         redirect_uri="http://localhost:8888",
-                                                        scope="user-read-recently-played"
+                                                        scope="user-read-recently-played",
+                                                        cache_path=cache_path
                                                         ))
 
     today = datetime.datetime.now()
@@ -76,9 +79,9 @@ def save_to_database(song_df: pd.DataFrame):  # Load stage
         except sqlalchemy.exc.IntegrityError:
             skipped += 1
 
-    print(f"{skipped}/{len(song_df)} values were skipped (already in the database)") \
+    print(f"{skipped}/{len(song_df)} items were skipped (already in the database)") \
         if skipped > 0 \
-        else print("Data loaded")
+        else print(f"Data loaded: {len(song_df)} items")
 
 
 def run_spotify_etl():
